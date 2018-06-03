@@ -173,6 +173,12 @@ namespace rewpa
 				this.BtnCreate.Enabled = true;
 				this.TxtSources.Enabled = true;
 
+				if (regions.Count == 0)
+				{
+					MessageBox.Show(this, "No regions found.", "", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+					return;
+				}
+
 				var result = this.SfdRegionInfo.ShowDialog();
 				if (result == DialogResult.OK)
 				{
