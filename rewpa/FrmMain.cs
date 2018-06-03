@@ -199,68 +199,69 @@ namespace rewpa
 		/// <param name="regions"></param>
 		private void GetRegionsFromPacks(string path, ref Dictionary<int, MabiWorld.Region> regions)
 		{
-			var pack = new PackReader(path);
-
-			var worldEntry = pack.GetEntry(@"world\world.trn");
-			if (worldEntry == null)
+			using (var pack = new PackReader(path))
 			{
-				this.Invoke((MethodInvoker)delegate
+				var worldEntry = pack.GetEntry(@"world\world.trn");
+				if (worldEntry == null)
 				{
-					MessageBox.Show(this, $"File 'world.trn' not found in pack folder '{path}'.", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
-				});
-				return;
-			}
-
-			var propEntry = pack.GetEntry(@"db\propdb.xml");
-			if (propEntry != null)
-			{
-				PropDb.Clear();
-				PropDb.Load(propEntry.GetDataAsStream());
-			}
-
-			var featureEntry = pack.GetEntry(@"features.xml.compiled");
-			if (featureEntry != null)
-			{
-				Features.Clear();
-				Features.Load(featureEntry.GetDataAsStream());
-				Features.SelectSetting("USA", false, false);
-			}
-
-			using (var ms = worldEntry.GetDataAsStream())
-			using (var trnReader = new XmlTextReader(ms))
-			{
-				if (!trnReader.ReadToDescendant("regions"))
-					throw new FormatException("Tag 'regions' not found in world.trn.");
-
-				using (var trnRegionsReader = trnReader.ReadSubtree())
-				{
-					while (trnRegionsReader.ReadToFollowing("region"))
+					this.Invoke((MethodInvoker)delegate
 					{
-						var workDir = trnRegionsReader.GetAttribute("workdir");
-						var fileName = trnReader.GetAttribute("name");
-						var regionFilePath = Path.Combine("world", workDir, fileName + ".rgn");
-						var regionEntry = pack.GetEntry(regionFilePath);
+						MessageBox.Show(this, $"File 'world.trn' not found in pack folder '{path}'.", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+					});
+					return;
+				}
 
-						if (regionEntry == null)
-							continue;
+				var propEntry = pack.GetEntry(@"db\propdb.xml");
+				if (propEntry != null)
+				{
+					PropDb.Clear();
+					PropDb.Load(propEntry.GetDataAsStream());
+				}
 
-						using (var regionStream = regionEntry.GetDataAsStream())
+				var featureEntry = pack.GetEntry(@"features.xml.compiled");
+				if (featureEntry != null)
+				{
+					Features.Clear();
+					Features.Load(featureEntry.GetDataAsStream());
+					Features.SelectSetting("USA", false, false);
+				}
+
+				using (var ms = worldEntry.GetDataAsStream())
+				using (var trnReader = new XmlTextReader(ms))
+				{
+					if (!trnReader.ReadToDescendant("regions"))
+						throw new FormatException("Tag 'regions' not found in world.trn.");
+
+					using (var trnRegionsReader = trnReader.ReadSubtree())
+					{
+						while (trnRegionsReader.ReadToFollowing("region"))
 						{
-							this.UpdateStatus($"Reading {fileName}...");
+							var workDir = trnRegionsReader.GetAttribute("workdir");
+							var fileName = trnReader.GetAttribute("name");
+							var regionFilePath = Path.Combine("world", workDir, fileName + ".rgn");
+							var regionEntry = pack.GetEntry(regionFilePath);
 
-							var region = MabiWorld.Region.ReadFrom(regionStream);
-							regions[region.Id] = region;
+							if (regionEntry == null)
+								continue;
 
-							for (var i = 0; i < region.AreaFileNames.Count; ++i)
+							using (var regionStream = regionEntry.GetDataAsStream())
 							{
-								var areaFileName = region.AreaFileNames[i];
-								var areaFilePath = Path.Combine("world", workDir, areaFileName + ".area");
+								this.UpdateStatus($"Reading {fileName}...");
 
-								using (var areaStream = pack.GetEntry(areaFilePath).GetDataAsStream())
+								var region = MabiWorld.Region.ReadFrom(regionStream);
+								regions[region.Id] = region;
+
+								for (var i = 0; i < region.AreaFileNames.Count; ++i)
 								{
-									var area = Area.ReadFrom(areaStream);
-									area.AreaPlanes.Clear();
-									region.Areas.Add(area);
+									var areaFileName = region.AreaFileNames[i];
+									var areaFilePath = Path.Combine("world", workDir, areaFileName + ".area");
+
+									using (var areaStream = pack.GetEntry(areaFilePath).GetDataAsStream())
+									{
+										var area = Area.ReadFrom(areaStream);
+										area.AreaPlanes.Clear();
+										region.Areas.Add(area);
+									}
 								}
 							}
 						}
