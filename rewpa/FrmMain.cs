@@ -239,8 +239,12 @@ namespace rewpa
 						var workDir = trnRegionsReader.GetAttribute("workdir");
 						var fileName = trnReader.GetAttribute("name");
 						var regionFilePath = Path.Combine("world", workDir, fileName + ".rgn");
+						var regionEntry = pack.GetEntry(regionFilePath);
 
-						using (var regionStream = pack.GetEntry(regionFilePath).GetDataAsStream())
+						if (regionEntry == null)
+							continue;
+
+						using (var regionStream = regionEntry.GetDataAsStream())
 						{
 							this.UpdateStatus($"Reading {fileName}...");
 
