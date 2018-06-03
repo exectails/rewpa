@@ -19,8 +19,6 @@ namespace rewpa
 	/// </summary>
 	public partial class FrmMain : Form
 	{
-		private const string OutFilename = "regioninfo.dat";
-
 		/// <summary>
 		/// Creates new instance.
 		/// </summary>
@@ -158,11 +156,6 @@ namespace rewpa
 						return false;
 					});
 				}
-
-				this.UpdateStatus($"Writing {OutFilename}...");
-
-				// Write region info
-				this.Export(OutFilename, regions);
 			});
 
 			// Update UI and move region info
@@ -188,9 +181,13 @@ namespace rewpa
 					var folderPath = Path.GetDirectoryName(filePath);
 
 					Settings.Default.SaveFolder = folderPath;
-					File.Copy(OutFilename, filePath, true);
+					this.Export(filePath, regions);
 
 					this.UpdateStatus($"Saved region info at '{filePath}'.");
+				}
+				else
+				{
+					this.UpdateStatus($"Saving cancelled.");
 				}
 			});
 		}
