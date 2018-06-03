@@ -212,11 +212,16 @@ namespace rewpa
 			}
 
 			var propEntry = pack.GetEntry(@"db\propdb.xml");
-			var featureEntry = pack.GetEntry(@"features.xml.compiled");
-
-			if (propEntry != null && featureEntry != null)
+			if (propEntry != null)
 			{
+				PropDb.Clear();
 				PropDb.Load(propEntry.GetDataAsStream());
+			}
+
+			var featureEntry = pack.GetEntry(@"features.xml.compiled");
+			if (featureEntry != null)
+			{
+				Features.Clear();
 				Features.Load(featureEntry.GetDataAsStream());
 				Features.SelectSetting("USA", false, false);
 			}
@@ -267,6 +272,21 @@ namespace rewpa
 		/// <param name="regions"></param>
 		private void GetRegionsFromFolder(string path, ref Dictionary<int, MabiWorld.Region> regions)
 		{
+			var propPath = Path.Combine(path, @"db\propdb.xml");
+			if (File.Exists(propPath))
+			{
+				PropDb.Clear();
+				PropDb.Load(propPath);
+			}
+
+			var featurePath = Path.Combine(path, @"features.xml.compiled");
+			if (File.Exists(featurePath))
+			{
+				Features.Clear();
+				Features.Load(featurePath);
+				Features.SelectSetting("USA", false, false);
+			}
+
 			foreach (var regionFilePath in Directory.EnumerateFiles(path, "*.rgn", SearchOption.AllDirectories))
 			{
 				using (var regionStream = new FileStream(regionFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
