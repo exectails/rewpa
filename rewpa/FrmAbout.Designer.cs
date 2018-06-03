@@ -138,7 +138,7 @@
 			this.label3.Name = "label3";
 			this.label3.Size = new System.Drawing.Size(37, 13);
 			this.label3.TabIndex = 31;
-			this.label3.Text = "v2.0.0";
+			this.label3.Text = "v2.0.3";
 			// 
 			// label2
 			// 
@@ -171,7 +171,7 @@
 			this.ImgInfo.TabIndex = 28;
 			this.ImgInfo.TabStop = false;
 			// 
-			// FrmHelp
+			// FrmAbout
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -185,7 +185,7 @@
 			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
-			this.Name = "FrmHelp";
+			this.Name = "FrmAbout";
 			this.ShowIcon = false;
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
