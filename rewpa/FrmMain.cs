@@ -138,8 +138,9 @@ namespace rewpa
 				}
 
 				// Remove props from areas that are only enabled during
-				// certain events of when features are enabled that are
+				// certain events or when features are enabled that are
 				// currently not.
+				// TODO: Include all props and let the server handle this.
 				foreach (var area in regions.Values.SelectMany(a => a.Areas))
 				{
 					area.Props.RemoveAll(prop =>
@@ -148,6 +149,14 @@ namespace rewpa
 							return false;
 
 						if (data.StringID.Value.Contains("/event/") && data.UsedServer)
+							return true;
+
+						// Some invisible prop at Dunbarton's Unicorn statue
+						if (data.StringID.Value.Contains("/weekly_concert/"))
+							return true;
+
+						// Invisible Emain cooking contest props
+						if (data.StringID.Value.Contains("/contest/"))
 							return true;
 
 						if (!string.IsNullOrWhiteSpace(data.Feature) && !Features.IsEnabled(data.Feature))
