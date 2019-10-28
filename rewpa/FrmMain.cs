@@ -159,6 +159,22 @@ namespace rewpa
 						if (data.StringID.Value.Contains("/contest/"))
 							return true;
 
+						// Invisible Emain concert hall barricade
+						if (data.ClassName == "scene_emain_concert_hall_barricade01")
+							return true;
+
+						// Invisible Gairech Halloween event prop
+						if (data.ClassName == "field_gairech_halloween2018_portal_place01")
+						{
+							// Controlled by the locale ExtraXML property,
+							// where "usa" is not negated while the event is
+							// active <_> WHY DO YOU HATE SERVER SIDED PROPS
+							// DEVCAT!? >__>
+							// ExtraXML="&lt;xml locale=&quot;!korea|usa|japan|!taiwan|!china&quot;/&gt;"
+							if (data.ExtraXML.Contains("!usa"))
+								return true;
+						}
+
 						if (!string.IsNullOrWhiteSpace(data.Feature) && !Features.IsEnabled(data.Feature))
 							return true;
 

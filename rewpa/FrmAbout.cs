@@ -14,7 +14,7 @@ namespace rewpa
 		/// </summary>
 		public FrmAbout()
 		{
-			InitializeComponent();
+			this.InitializeComponent();
 		}
 
 		/// <summary>
