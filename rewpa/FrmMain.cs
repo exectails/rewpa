@@ -106,6 +106,7 @@ namespace rewpa
 			this.LblStatus.Text = "Reading files...";
 
 			var regions = new Dictionary<int, MabiWorld.Region>();
+			var cancel = false;
 
 			// Run in task to not block UI
 			await Task.Run(() =>
@@ -127,13 +128,20 @@ namespace rewpa
 						continue;
 					}
 
+					bool success;
 					if (Directory.EnumerateFiles(line, "*.pack", SearchOption.TopDirectoryOnly).Any())
 					{
-						this.GetRegionsFromPacks(line, ref regions);
+						success = this.GetRegionsFromPacks(line, ref regions);
 					}
 					else
 					{
-						this.GetRegionsFromFolder(line, ref regions);
+						success = this.GetRegionsFromFolder(line, ref regions);
+					}
+
+					if (!success)
+					{
+						cancel = true;
+						return;
 					}
 				}
 
@@ -183,6 +191,11 @@ namespace rewpa
 				}
 			});
 
+			if (cancel)
+			{
+				regions.Clear();
+			}
+
 			// Update UI and move region info
 			this.Invoke((MethodInvoker)delegate
 			{
@@ -222,7 +235,7 @@ namespace rewpa
 		/// </summary>
 		/// <param name="path"></param>
 		/// <param name="regions"></param>
-		private void GetRegionsFromPacks(string path, ref Dictionary<int, MabiWorld.Region> regions)
+		private bool GetRegionsFromPacks(string path, ref Dictionary<int, MabiWorld.Region> regions)
 		{
 			using (var pack = new PackReader(path))
 			{
@@ -233,7 +246,7 @@ namespace rewpa
 					{
 						MessageBox.Show(this, $"File 'world.trn' not found in pack folder '{path}'.", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
 					});
-					return;
+					return false;
 				}
 
 				var propEntry = pack.GetEntry(@"db\propdb.xml");
@@ -269,38 +282,49 @@ namespace rewpa
 							if (regionEntry == null)
 								continue;
 
-							using (var regionStream = regionEntry.GetDataAsStream())
+							try
 							{
-								this.UpdateStatus($"Reading {fileName}...");
-
-								var region = MabiWorld.Region.ReadFrom(regionStream);
-								regions[region.Id] = region;
-
-								for (var i = 0; i < region.AreaFileNames.Count; ++i)
+								using (var regionStream = regionEntry.GetDataAsStream())
 								{
-									var areaFileName = region.AreaFileNames[i];
-									var areaFilePath = Path.Combine("world", workDir, areaFileName + ".area");
+									this.UpdateStatus($"Reading {fileName}...");
 
-									using (var areaStream = pack.GetEntry(areaFilePath).GetDataAsStream())
+									var region = MabiWorld.Region.ReadFrom(regionStream);
+									regions[region.Id] = region;
+
+									for (var i = 0; i < region.AreaFileNames.Count; ++i)
 									{
-										var area = Area.ReadFrom(areaStream);
-										area.AreaPlanes.Clear();
-										region.Areas.Add(area);
+										var areaFileName = region.AreaFileNames[i];
+										var areaFilePath = Path.Combine("world", workDir, areaFileName + ".area");
+
+										using (var areaStream = pack.GetEntry(areaFilePath).GetDataAsStream())
+										{
+											var area = Area.ReadFrom(areaStream);
+											area.AreaPlanes.Clear();
+											region.Areas.Add(area);
+										}
 									}
 								}
+							}
+							catch (Exception ex)
+							{
+								MessageBox.Show($"Failed to parse region '{regionFilePath}', error: " + ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+								return false;
 							}
 						}
 					}
 				}
 			}
+
+			return true;
 		}
 
 		/// <summary>
 		/// Loads all .rgn files in given folder and all its subfolders.
+		/// Returns whether the process was successful.
 		/// </summary>
 		/// <param name="path"></param>
 		/// <param name="regions"></param>
-		private void GetRegionsFromFolder(string path, ref Dictionary<int, MabiWorld.Region> regions)
+		private bool GetRegionsFromFolder(string path, ref Dictionary<int, MabiWorld.Region> regions)
 		{
 			var propPath = Path.Combine(path, @"db\propdb.xml");
 			if (File.Exists(propPath))
@@ -319,30 +343,40 @@ namespace rewpa
 
 			foreach (var regionFilePath in Directory.EnumerateFiles(path, "*.rgn", SearchOption.AllDirectories))
 			{
-				using (var regionStream = new FileStream(regionFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+				try
 				{
-					var fileName = Path.GetFileNameWithoutExtension(regionFilePath);
-					this.UpdateStatus($"Reading {fileName}...");
-
-					var region = MabiWorld.Region.ReadFrom(regionStream);
-					regions[region.Id] = region;
-
-					var regionDirPath = Path.GetDirectoryName(regionFilePath);
-
-					for (var i = 0; i < region.AreaFileNames.Count; ++i)
+					using (var regionStream = new FileStream(regionFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
 					{
-						var areaFileName = region.AreaFileNames[i];
-						var areaFilePath = Path.Combine(regionDirPath, areaFileName + ".area");
+						var fileName = Path.GetFileNameWithoutExtension(regionFilePath);
+						this.UpdateStatus($"Reading {fileName}...");
 
-						using (var areaStream = new FileStream(areaFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+						var region = MabiWorld.Region.ReadFrom(regionStream);
+						regions[region.Id] = region;
+
+						var regionDirPath = Path.GetDirectoryName(regionFilePath);
+
+						for (var i = 0; i < region.AreaFileNames.Count; ++i)
 						{
-							var area = Area.ReadFrom(areaStream);
-							area.AreaPlanes.Clear();
-							region.Areas.Add(area);
+							var areaFileName = region.AreaFileNames[i];
+							var areaFilePath = Path.Combine(regionDirPath, areaFileName + ".area");
+
+							using (var areaStream = new FileStream(areaFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+							{
+								var area = Area.ReadFrom(areaStream);
+								area.AreaPlanes.Clear();
+								region.Areas.Add(area);
+							}
 						}
 					}
 				}
+				catch (Exception ex)
+				{
+					MessageBox.Show($"Failed to parse region '{regionFilePath}', error: " + ex.Message, this.Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+					return false;
+				}
 			}
+
+			return true;
 		}
 
 		/// <summary>
