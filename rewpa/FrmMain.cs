@@ -119,23 +119,29 @@ namespace rewpa
 					if (trimmedLine == "" || trimmedLine.StartsWith("//"))
 						continue;
 
-					if (!Directory.Exists(line))
-					{
-						this.Invoke((MethodInvoker)delegate
-						{
-							MessageBox.Show(this, $"Directory '{line}' not found.", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
-						});
-						continue;
-					}
-
 					bool success;
-					if (Directory.EnumerateFiles(line, "*.pack", SearchOption.TopDirectoryOnly).Any())
+					if (Directory.Exists(line))
 					{
-						success = this.GetRegionsFromPacks(line, ref regions);
+						if (Directory.EnumerateFiles(line, "*.pack", SearchOption.TopDirectoryOnly).Any())
+						{
+							success = this.GetRegionsFromPacks(line, ref regions);
+						}
+						else
+						{
+							success = this.GetRegionsFromFolder(line, ref regions);
+						}
+					}
+					else if (File.Exists(line) && string.Compare(Path.GetFileName(line), "world.trn") == 0)
+					{
+						success = this.GetRegionsFromFolder(line, ref regions);
 					}
 					else
 					{
-						success = this.GetRegionsFromFolder(line, ref regions);
+						this.Invoke((MethodInvoker)delegate
+						{
+							MessageBox.Show(this, $"Invalid directory or file: '{line}'.", "", MessageBoxButtons.OK, MessageBoxIcon.Error);
+						});
+						continue;
 					}
 
 					if (!success)
@@ -341,13 +347,50 @@ namespace rewpa
 				Features.SelectSetting("USA", false, false);
 			}
 
-			foreach (var regionFilePath in Directory.EnumerateFiles(path, "*.rgn", SearchOption.AllDirectories))
+			var regionFilePaths = new List<string>();
+
+			if (File.Exists(path))
+			{
+				var worldFolderPath = Path.GetDirectoryName(path);
+
+				using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+				using (var trnReader = new XmlTextReader(fs))
+				{
+					if (!trnReader.ReadToDescendant("regions"))
+						throw new FormatException("Tag 'regions' not found in world.trn.");
+
+					using (var trnRegionsReader = trnReader.ReadSubtree())
+					{
+						while (trnRegionsReader.ReadToFollowing("region"))
+						{
+							var workDir = trnRegionsReader.GetAttribute("workdir");
+							var fileName = trnReader.GetAttribute("name");
+							var regionFilePath = Path.Combine(worldFolderPath, workDir, fileName + ".rgn");
+
+							regionFilePaths.Add(regionFilePath);
+						}
+					}
+				}
+			}
+			else
+			{
+				regionFilePaths.AddRange(Directory.EnumerateFiles(path, "*.rgn", SearchOption.AllDirectories));
+			}
+
+			foreach (var regionFilePath in regionFilePaths)
 			{
 				try
 				{
 					using (var regionStream = new FileStream(regionFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
 					{
 						var fileName = Path.GetFileNameWithoutExtension(regionFilePath);
+
+						if (string.Compare(fileName, "DungeonProp_Temp", true) == 0)
+						{
+							this.UpdateStatus($"Skipping {fileName}...");
+							continue;
+						}
+
 						this.UpdateStatus($"Reading {fileName}...");
 
 						var region = MabiWorld.Region.ReadFrom(regionStream);
