@@ -7,7 +7,7 @@ and event information, such as their shape and type.
 
 This new version has a more pleasing UI and supports multiple sources
 for regions, so you can not only parse the client's pack files,
-but also a data foler with modified region files for example.
+but also, for example, a data folder with modified region files.
 
 The resulting regioninfo.dat can be used with any Aura server.
 
@@ -19,6 +19,7 @@ Usage
    ```
    C:\Nexon\Library\mabinogi\appdata\package
    C:\Nexon\Library\mabinogi\appdata\data
+   C:\Mabinogi\extracted_data\world\world.trn
    ```
 3. Click Generate and wait until it's done.
 4. Save regioninfo.dat.
