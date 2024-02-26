@@ -245,7 +245,7 @@ namespace rewpa
 		{
 			using (var pack = new PackReader(path))
 			{
-				var worldEntry = pack.GetEntry(@"world\world.trn");
+				var worldEntry = pack.GetEntry(@"data\world\world.trn");
 				if (worldEntry == null)
 				{
 					this.Invoke((MethodInvoker)delegate
@@ -255,14 +255,14 @@ namespace rewpa
 					return false;
 				}
 
-				var propEntry = pack.GetEntry(@"db\propdb.xml");
+				var propEntry = pack.GetEntry(@"data\db\propdb.xml");
 				if (propEntry != null)
 				{
 					PropDb.Clear();
 					PropDb.Load(propEntry.GetDataAsStream());
 				}
 
-				var featureEntry = pack.GetEntry(@"features.xml.compiled");
+				var featureEntry = pack.GetEntry(@"data\features.xml.compiled");
 				if (featureEntry != null)
 				{
 					Features.Clear();
@@ -282,7 +282,7 @@ namespace rewpa
 						{
 							var workDir = trnRegionsReader.GetAttribute("workdir");
 							var fileName = trnReader.GetAttribute("name");
-							var regionFilePath = Path.Combine("world", workDir, fileName + ".rgn");
+							var regionFilePath = Path.Combine("data", "world", workDir, fileName + ".rgn");
 							var regionEntry = pack.GetEntry(regionFilePath);
 
 							if (regionEntry == null)
@@ -300,7 +300,7 @@ namespace rewpa
 									for (var i = 0; i < region.AreaFileNames.Count; ++i)
 									{
 										var areaFileName = region.AreaFileNames[i];
-										var areaFilePath = Path.Combine("world", workDir, areaFileName + ".area");
+										var areaFilePath = Path.Combine("data", "world", workDir, areaFileName + ".area");
 
 										using (var areaStream = pack.GetEntry(areaFilePath).GetDataAsStream())
 										{
